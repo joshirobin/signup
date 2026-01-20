@@ -1,0 +1,7 @@
+{
+  "name": "Copy of FuelCharge Pro - House Account Manager",
+  "description": "A sophisticated house charge management system for gas stations and C-stores featuring AI receipt scanning, automated invoicing, and deep analytics.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
