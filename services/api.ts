@@ -16,6 +16,10 @@ import {
 import { getAuth } from "firebase/auth";
 import { Account, Invoice, Transaction, InvoiceStatus } from '../types';
 
+/**
+ * Ruthton Express Billing - Cloud Persistence Module
+ * Project: ruthtonexpress-billing
+ */
 const firebaseConfig = {
   apiKey: "AIzaSy_CLOUD_KEY_PLACEHOLDER", 
   authDomain: "ruthtonexpress-billing.firebaseapp.com",
@@ -33,12 +37,16 @@ export const auth = getAuth(app);
 export const ApiService = {
   lastError: '',
 
+  /**
+   * Verified connectivity with the Firebase Cloud Network
+   */
   async checkHealth(): Promise<{ status: string; database: string; error?: string; url?: string }> {
     try {
-      await getDoc(doc(db, "settings", "global"));
+      const docRef = doc(db, "settings", "global");
+      await getDoc(docRef);
       return {
         status: 'online',
-        database: 'Connected to Firebase Firestore',
+        database: 'Firebase Cloud Firestore',
         url: 'firestore.googleapis.com'
       };
     } catch (err: any) {
@@ -59,7 +67,7 @@ export const ApiService = {
         id: doc.id
       } as Account));
     } catch (err) {
-      console.error("Firebase getAccounts failed:", err);
+      console.error("Firestore getAccounts failed:", err);
       return [];
     }
   },
@@ -77,7 +85,7 @@ export const ApiService = {
         id: doc.id
       } as Invoice));
     } catch (err) {
-      console.error("Firebase getInvoices failed:", err);
+      console.error("Firestore getInvoices failed:", err);
       return [];
     }
   },
@@ -99,10 +107,11 @@ export const ApiService = {
       const invoiceRef = doc(db, "invoices", invoiceId);
       const invoiceSnap = await transaction.get(invoiceRef);
       
-      if (!invoiceSnap.exists()) throw new Error("Invoice not found");
+      if (!invoiceSnap.exists()) throw new Error("Invoice not found in cloud ledger");
       
       const invData = invoiceSnap.data() as Invoice;
       
+      // Credit balance adjustment for payments
       if (invData.status !== InvoiceStatus.PAID && status === InvoiceStatus.PAID) {
         const accountRef = doc(db, "accounts", invData.accountId);
         transaction.update(accountRef, {

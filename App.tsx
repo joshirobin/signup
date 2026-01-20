@@ -47,7 +47,7 @@ export default function App() {
     } catch (error: any) {
       console.error("Critical failure loading initial data:", error);
       setConnectionError(error.message || "Database synchronization failed.");
-      addNotification("Error: Backend is unreachable.");
+      addNotification("Error: Cloud ledger unreachable.");
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +58,7 @@ export default function App() {
   }, [user, loadData]);
 
   const addNotification = (msg: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
     setNotifications(prev => [msg, ...prev].slice(0, 5));
     setTimeout(() => {
       setNotifications(prev => prev.filter(m => m !== msg));
@@ -74,7 +75,7 @@ export default function App() {
     try {
       await ApiService.saveAccount(acc);
       await loadData();
-      addNotification(`Account "${acc.name}" saved successfully.`);
+      addNotification(`Account "${acc.name}" saved to cloud.`);
     } catch (err) {
       addNotification("Error: Could not save house account.");
     }
@@ -85,9 +86,9 @@ export default function App() {
     try {
       await ApiService.saveTransaction(newTrans);
       await loadData();
-      addNotification(`Transaction recorded.`);
+      addNotification(`Transaction posted successfully.`);
     } catch (err) {
-      addNotification("Error: Transaction could not be processed.");
+      addNotification("Error: Transaction rejected by cloud service.");
     }
   };
 
@@ -95,10 +96,10 @@ export default function App() {
     try {
       await ApiService.saveInvoice(newInv);
       await loadData();
-      addNotification(`Invoice ${newInv.id} generated.`);
+      addNotification(`Invoice ${newInv.id} issued.`);
       setCurrentView('invoices');
     } catch (err) {
-      addNotification("Error: Invoice generation failed.");
+      addNotification("Error: Invoice commitment failed.");
     }
   };
 
@@ -108,9 +109,9 @@ export default function App() {
       await loadData();
       const inv = invoices.find(i => i.id === invoiceId);
       const acc = accounts.find(a => a.id === inv?.accountId);
-      addNotification(`Invoice ${invoiceId} sent to ${acc?.email}`);
+      addNotification(`Statement ${invoiceId} dispatched to ${acc?.email}`);
     } catch (err) {
-      addNotification("Error: Email delivery failed.");
+      addNotification("Error: Communications channel failure.");
     }
   };
 
@@ -118,16 +119,17 @@ export default function App() {
     try {
       await ApiService.updateInvoiceStatus(invoiceId, InvoiceStatus.PAID);
       await loadData();
-      addNotification(`Invoice ${invoiceId} marked as paid.`);
+      addNotification(`Statement ${invoiceId} settled.`);
     } catch (err) {
-      addNotification("Error: Status update failed.");
+      addNotification("Error: Ledger update failed.");
     }
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-6">
+        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-2xl shadow-blue-500/20"></div>
+        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Authenticating Session</p>
       </div>
     );
   }
@@ -141,25 +143,25 @@ export default function App() {
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium">Synchronizing with live server...</p>
+          <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Cloud Ledger Handshake...</p>
         </div>
       );
     }
 
     if (connectionError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
-           <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
-             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4 animate-in fade-in duration-500">
+           <div className="w-20 h-20 bg-red-100 text-red-600 rounded-3xl flex items-center justify-center mb-8 shadow-xl shadow-red-100">
+             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
            </div>
-           <h2 className="text-2xl font-black text-slate-800 mb-2 tracking-tight">Backend Connection Failed</h2>
-           <p className="text-slate-500 max-w-md mb-8">The application cannot communicate with the live server. Please check your network or server configuration.</p>
-           <div className="bg-slate-100 p-4 rounded-xl font-mono text-xs text-slate-600 mb-8 border border-slate-200">
-             Error: {connectionError}
+           <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tighter">Connection Interrupted</h2>
+           <p className="text-slate-500 max-w-sm mb-10 font-medium">Unable to synchronize with the Ruthton Express Cloud Persistence layer. Please check your credentials or network.</p>
+           <div className="bg-slate-100 p-5 rounded-2xl font-mono text-[10px] text-slate-500 mb-10 border border-slate-200 w-full max-w-md break-all">
+             LOG_SIG: {connectionError}
            </div>
            <div className="flex space-x-4">
-             <button onClick={loadData} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">Try Again</button>
-             <button onClick={() => setCurrentView('settings')} className="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-50 transition-all">Check Settings</button>
+             <button onClick={loadData} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-slate-800 transition-all active:scale-95">Retry Sync</button>
+             <button onClick={() => setCurrentView('settings')} className="px-8 py-4 bg-white border border-slate-200 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all">Diagnostics</button>
            </div>
         </div>
       );
@@ -190,86 +192,94 @@ export default function App() {
     }
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "??";
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (user: User) => {
+    if (user.displayName) return user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return user.email?.split('@')[0].slice(0, 2).toUpperCase() || "??";
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
-        <div className="p-8 flex items-center space-x-4 cursor-pointer" onClick={() => setCurrentView('dashboard')}>
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-500/20">
+      {/* Sidebar Navigation */}
+      <aside className="w-80 bg-white border-r border-slate-200 flex flex-col hidden lg:flex relative z-40">
+        <div className="p-10 flex items-center space-x-4 cursor-pointer group" onClick={() => setCurrentView('dashboard')}>
+          <div className="w-14 h-14 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-blue-500/30 group-hover:scale-105 transition-transform duration-300">
             F
           </div>
-          <span className="text-2xl font-black text-slate-800 tracking-tighter">FuelCharge<span className="text-blue-600">Pro</span></span>
+          <div className="flex flex-col">
+            <span className="text-2xl font-black text-slate-900 tracking-tighter leading-none">FuelCharge</span>
+            <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.4em] mt-1 ml-0.5">Enterprise Pro</span>
+          </div>
         </div>
         
-        <nav className="flex-1 px-4 py-4 space-y-2">
-          <NavItem active={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} icon={<ICONS.Dashboard />} label="Dashboard Overview" />
-          <NavItem active={currentView === 'accounts'} onClick={() => setCurrentView('accounts')} icon={<ICONS.Accounts />} label="Manage Accounts" />
+        <nav className="flex-1 px-6 py-4 space-y-2">
+          <NavItem active={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} icon={<ICONS.Dashboard />} label="Dashboard" />
+          <NavItem active={currentView === 'accounts'} onClick={() => setCurrentView('accounts')} icon={<ICONS.Accounts />} label="House Accounts" />
           <NavItem active={currentView === 'invoices'} onClick={() => setCurrentView('invoices')} icon={<ICONS.Invoices />} label="Billing Ledger" />
           <NavItem active={currentView === 'invoice-generator'} onClick={() => setCurrentView('invoice-generator')} icon={
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          } label="Generate Invoice" />
-          <NavItem active={currentView === 'scanner'} onClick={() => setCurrentView('scanner')} icon={<ICONS.Scanner />} label="AI Smart Scan" />
+          } label="Issue Invoice" />
+          <NavItem active={currentView === 'scanner'} onClick={() => setCurrentView('scanner')} icon={<ICONS.Scanner />} label="AI Scanner" />
         </nav>
 
-        <div className="p-6 border-t border-slate-100 space-y-2">
-          <NavItem active={currentView === 'settings'} onClick={() => setCurrentView('settings')} icon={<ICONS.Settings />} label="Control Panel" />
+        <div className="p-8 border-t border-slate-100 space-y-3">
+          <NavItem active={currentView === 'settings'} onClick={() => setCurrentView('settings')} icon={<ICONS.Settings />} label="Diagnostics" />
           <button 
             onClick={() => signOut(auth)}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-400 hover:bg-red-50 hover:text-red-600 group font-bold text-sm"
+            className="w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all duration-300 text-slate-400 hover:bg-red-50 hover:text-red-600 group font-black text-[10px] uppercase tracking-widest"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span>Log Out</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-0.5 transition-transform"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            <span>Terminate Session</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Experience Engine */}
       <main className="flex-1 overflow-y-auto relative flex flex-col">
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-10 py-5 flex justify-between items-center">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-slate-200 px-12 py-6 flex justify-between items-center">
           <div className="flex items-center space-x-4">
+             <div className="lg:hidden w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">F</div>
              <h1 className="text-xl font-black text-slate-900 capitalize tracking-tighter">{currentView.replace('-', ' ')}</h1>
           </div>
-          <div className="flex items-center space-x-6">
+          
+          <div className="flex items-center space-x-8">
              <div className="relative">
-               <button className="p-3 text-slate-400 hover:text-slate-600 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200">
+               <button className="p-3.5 text-slate-400 hover:text-slate-900 rounded-2xl hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-                 {notifications.length > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full ring-4 ring-white"></span>}
+                 {notifications.length > 0 && <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-4 ring-white"></span>}
                </button>
              </div>
              
-             <div className="flex items-center space-x-4 pl-6 border-l border-slate-200">
+             <div className="flex items-center space-x-4 pl-8 border-l border-slate-200">
                <div className="text-right hidden sm:block">
                  <p className="text-sm font-black text-slate-900 leading-none">{user.displayName || user.email?.split('@')[0]}</p>
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Admin Session</p>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5">Authorized Administrator</p>
                </div>
                {user.photoURL ? (
-                 <img src={user.photoURL} alt="Profile" className="h-10 w-10 rounded-2xl ring-4 ring-slate-100 object-cover shadow-lg" />
+                 <img src={user.photoURL} alt="Profile" className="h-11 w-11 rounded-[1.25rem] ring-4 ring-slate-100 object-cover shadow-2xl" />
                ) : (
-                 <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xs font-black shadow-lg shadow-slate-200 ring-4 ring-slate-100">
-                    {getInitials(user.displayName || user.email)}
+                 <div className="h-11 w-11 rounded-[1.25rem] bg-slate-900 text-white flex items-center justify-center text-xs font-black shadow-2xl ring-4 ring-slate-100">
+                    {getInitials(user)}
                  </div>
                )}
              </div>
           </div>
         </header>
 
-        <div className="p-10 flex-1">
+        <div className="p-12 flex-1">
           {renderView()}
         </div>
 
-        {/* Notifications Toast */}
-        <div className="fixed bottom-10 right-10 z-50 flex flex-col space-y-3">
+        {/* Dynamic Event Notification System */}
+        <div className="fixed bottom-12 right-12 z-50 flex flex-col space-y-4 pointer-events-none">
           {notifications.map((note, idx) => (
-            <div key={idx} className="bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] animate-in slide-in-from-right-12 flex items-center space-x-4 border border-white/10">
-              <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <div key={idx} className="pointer-events-auto bg-slate-900 text-white px-10 py-5 rounded-[1.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] animate-in slide-in-from-right-12 duration-500 flex items-center space-x-5 border border-white/10 group">
+              <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               </div>
-              <span className="text-sm font-black tracking-tight">{note}</span>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">System Notification</span>
+                <span className="text-sm font-bold tracking-tight text-white">{note}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -282,15 +292,17 @@ function NavItem({ active, onClick, icon, label }: { active: boolean, onClick: (
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center space-x-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${
+      className={`w-full flex items-center space-x-5 px-6 py-4.5 rounded-[1.5rem] transition-all duration-300 group relative ${
         active 
-          ? 'bg-slate-900 text-white shadow-2xl shadow-slate-200' 
-          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          ? 'bg-slate-900 text-white shadow-2xl shadow-slate-200 scale-[1.02]' 
+          : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >
       <span className={`${active ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-900'} transition-colors`}>{icon}</span>
-      <span className="font-black text-xs uppercase tracking-widest">{label}</span>
-      {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_10px_#3b82f6]"></div>}
+      <span className="font-black text-[10px] uppercase tracking-[0.2em]">{label}</span>
+      {active && (
+        <div className="absolute right-6 w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_12px_#3b82f6]"></div>
+      )}
     </button>
   );
 }
